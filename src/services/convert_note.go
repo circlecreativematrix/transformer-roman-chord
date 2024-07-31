@@ -19,7 +19,7 @@ type NoteBag struct {
 
 var BagConvert = new(NoteBag)
 
-func Init() {
+func InitConvert() {
 	Letter_to_midi = map[string]int{
 		"c0":  0,
 		"c1":  12,

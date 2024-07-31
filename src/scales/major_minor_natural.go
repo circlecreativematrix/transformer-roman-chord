@@ -8,12 +8,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func HandleMajor(chord types.Chord) []types.NBEFNoteRequest {
+func HandleRomanChord(chord types.Chord, romanOut string) []types.NBEFNoteRequest {
 	offset := -999
 	romanChange := types.Constants.Major
-	romanOut := getRomanOnly(chord.Chord)
-	// todo - handle if there are less than 3 in pattern
-	//		upperRomanChord(chord, offset)
 	majorScale := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO"}
 	offsetMajorIndex := []string{"I", "II", "III", "IV", "V", "VI", "VII", "VIII"}
 	offsetMinorIndex := []string{"i", "ii", "iii", "iv", "v", "vi", "vii", "viii"}
@@ -71,4 +68,14 @@ func HandleMajor(chord types.Chord) []types.NBEFNoteRequest {
 
 	return chordRequest.ChordNotes
 	//println(types.StringAllNotes(chord), "after modifiers")
+}
+func HandleMajor(chord types.Chord) []types.NBEFNoteRequest {
+
+	romanOut := getRomanOnly(chord.Chord)
+	if romanOut == "" {
+		// assume it's a letter, handle that.
+		return HandleLetter(chord)
+	}
+	return HandleRomanChord(chord, romanOut)
+
 }

@@ -28,14 +28,15 @@ func TestChordListToNotes(t *testing.T) {
 		assert.Equal(t, outNotes[0].KeyType, "major")
 	})
 }
+
 func TestLetterChords(t *testing.T) {
 	t.Run("testing letter chords", func(t *testing.T) {
 		roman := `
-			    chord:C4,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
-				chord:D4,time:P+1/4
+			    chord:C,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
+				chord:C4#M,time:P+1/4
 				chord:E,time:P+1/4
-				chord:F,time:P+1/4
-				chord:G,time:P+1/4
+				chord:FM,time:P+1/4
+				chord:Gm,time:P+1/4
 				chord:A,time:P+1/4
 				chord:B,time:P+1/4
 				chord:C,offset:7,time:P+1/4`
