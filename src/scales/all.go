@@ -1,22 +1,33 @@
 package scales
 
+// root postion 0 2 4
+// first inversion 2 4 7
+// second inversion 4 7 9
+// 7th chord inversion - root position inversion 4 notes, 0 2 4 6
+// 7th first inversion 2,4,6,7
+// 7th , second inversion , 4,6,7,9
+// 7th third inversion, 6,7,9,11
+// GM/d Gm/D G+ , GO/D major minor , all notes of triad, then base note
+//Gm_5/D
+// chromatic notes
+// c e g to 0 2 4 underneath.
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"fornof.me/m/v2/src/types"
+	"github.com/rs/zerolog/log"
 )
 
 func getRomanOnly(roman string) string {
 	regRomanOnly, _ := regexp.Compile("([ivIVXCxc]+)")
 	return regRomanOnly.FindString(roman)
 }
-func handleModifiers(roman string, chord *[]types.NBEFNote) {
-	handleSharpsFlats(roman, chord)
-	handleNumbers(roman, chord)
-	regModifiers, _ := regexp.Compile("([-+Oo/]+)")
-	modifiersOut := regModifiers.FindString(roman)
-	println("modifiers out", modifiersOut, "roman", roman)
+func HandleDiminished(chordRequest *types.ChordRequest) {
+	regModifiers, _ := regexp.Compile("([-+Oo]+)")
+	modifiersOut := regModifiers.FindString(chordRequest.Chord.Chord)
+	println("modifiers out", modifiersOut, "roman", chordRequest.Chord.Chord)
 	if modifiersOut == "" {
 		return
 	}
@@ -27,7 +38,7 @@ func handleModifiers(roman string, chord *[]types.NBEFNote) {
 	}
 	plus := strings.Index(modifiersOut, "+")
 	if plus != -1 {
-		(*chord)[2].Halfsteps += 1
+		(chordRequest.ChordNotes)[2].Halfsteps += 1
 		println("plus", plus)
 	}
 	if strings.Contains(modifiersOut, "O") {
@@ -35,17 +46,28 @@ func handleModifiers(roman string, chord *[]types.NBEFNote) {
 		// does major/minor make a difference here?
 		// should just be the top note
 		//(*chord)[1].Halfsteps -= 1
-		(*chord)[2].Halfsteps -= 1
+		// ignore figured base ? maybe
+		// if chordRequest.RomanType == types.Constants.Major {
+		// 	// get to a minor first if a major
+		// 	chordRequest.ChordNotes[1].Halfsteps -= 1
+		// }
+		chordRequest.ChordNotes[2].Halfsteps = -1
 
 	}
 	if strings.Contains(modifiersOut, "o") {
-		println(modifiersOut[0], "half diminished? what does this look like")
+		log.Error().Msgf("%b,%s", modifiersOut[0], "half diminished? psh , skipping like a 7th")
 	}
+}
+func handleModifiers(chordRequest *types.ChordRequest) {
+	handleSharpsFlats(chordRequest)
+	handleNumbers(chordRequest)
+	HandleDiminished(chordRequest)
 
 }
-func handleNumbers(roman string, chord *[]types.NBEFNote) {
+func handleNumbers(chordRequest *types.ChordRequest) {
+
 	regNumbers := regexp.MustCompile("/?[_0-9]+")
-	numbersOut := regNumbers.FindString(roman)
+	numbersOut := regNumbers.FindString(chordRequest.Chord.Chord)
 	if numbersOut == "" {
 		return
 	}
@@ -56,38 +78,44 @@ func handleNumbers(roman string, chord *[]types.NBEFNote) {
 		denominator = splitNumeratorDenominator[1]
 	}
 	if numerator != "" {
-		println("numerator", numerator)
+		println("numerator-ignore", numerator)
 	}
 	if denominator != "" {
-		println("denominator", denominator)
+		println("denominator-ignore", denominator)
 	}
 	println("numerator", numerator, "denominator", denominator)
 
 }
-func handleSharpsFlats(roman string, chord *[]types.NBEFNote) {
-	regSharpFlats, _ := regexp.Compile("([#@]?)")
-	sharpFlatsOut := regSharpFlats.FindString(roman)
+func handleSharpsFlats(chordRequest *types.ChordRequest) {
+	regSharpFlats, _ := regexp.Compile("([#@]+)")
+	sharpFlatsOut := regSharpFlats.FindString(chordRequest.Chord.Chord)
 	if sharpFlatsOut == "" {
 		return
 	}
 	if sharpFlatsOut == "#" {
-		(*chord)[0].Halfsteps += 1
+		println("found sharp")
+		(chordRequest.ChordNotes)[0].Halfsteps += 1
 	}
 	if sharpFlatsOut == "@" {
-		(*chord)[0].Halfsteps -= 1
+		println("found flat")
+		(chordRequest.ChordNotes)[0].Halfsteps -= 1
 	}
 }
-func upperRomanChord(chord *[]types.NBEFNote, pattern []int, offset int, chordInfo *[]types.NBEFNote) {
-	if len(*chordInfo) == 0 {
-		(*chordInfo) = append((*chordInfo), types.NBEFNote{Note: nil})
+func upperRomanChord(chord types.Chord, offset int) []types.NBEFNoteRequest {
+	outNotes := []types.NBEFNoteRequest{}
+
+	if chord.ChordInfo.TimeSec == "" {
+		chord.ChordInfo.TimeSec = "P"
 	}
-	for i := 0; i < len(pattern); i++ {
-		println("note", pattern[i]+offset)
-		info := (*chordInfo)[len(*chordInfo)-1]
-		offPattern := pattern[i] + offset
-		println("offPattern", offPattern)
+
+	for i := 0; i < len(chord.Pattern); i++ {
+		println("note", chord.Pattern[i]+offset)
+		info := chord.ChordInfo // copies last of the chord infos
+		offPattern := strconv.Itoa(chord.Pattern[i] + offset + chord.Offset)
 		info.Note = &offPattern
-		(*chord) = append((*chord), info)
+		outNotes = append(outNotes, info)
 	}
+
+	return outNotes
 
 }

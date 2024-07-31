@@ -1,87 +1,81 @@
 package scales
 
+// minor chord only drops 5th one
+// major drops into a minor and a 5th ,
+// if played out , middle 3rd does not drop
 import (
 	"fornof.me/m/v2/src/types"
+	"github.com/rs/zerolog/log"
 )
 
-func HandleMajor(roman string, chord *[]types.NBEFNote, pattern []int, chordInfo *[]types.NBEFNote, keyType string) {
-	offset := 0
-	romanOut := getRomanOnly(roman)
-	// todo - handle if there are less than 3 in pattern
-	switch romanOut {
-	case "I":
-		offset = 0
-		upperRomanChord(chord, pattern, offset, chordInfo)
-		if keyType == "minor_natural" {
-			(*chord)[1].Halfsteps += 1 // 3 is bumped up
-		} else {
-			//no change for major
+func HandleRomanChord(chord types.Chord, romanOut string) []types.NBEFNoteRequest {
+	offset := -999
+	romanChange := types.Constants.Major
+	majorScale := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO"}
+	offsetMajorIndex := []string{"I", "II", "III", "IV", "V", "VI", "VII", "VIII"}
+	offsetMinorIndex := []string{"i", "ii", "iii", "iv", "v", "vi", "vii", "viii"}
+	for i, v := range majorScale {
+		if v == chord.Chord { //includes modifiers such as O
+			offset = i
+			romanChange = "none"
+			chord.Chord = getRomanOnly(chord.Chord) // if modifier is on the scale,
+			//remove, it's fine just the way it is
+			break
 		}
-	case "II":
-		offset = 1
-		upperRomanChord(chord, pattern, offset, chordInfo)
-		(*chord)[1].Halfsteps -= 1 // 3 is bumped down
-
-	case "III":
-		offset = 2
-		upperRomanChord(chord, pattern, offset, chordInfo)
-		(*chord)[1].Halfsteps -= 1 // 3 is bumped down
-
-	case "IV":
-		offset = 3
-		upperRomanChord(chord, pattern, offset, chordInfo)
-
-	case "V":
-		offset = 4
-		upperRomanChord(chord, pattern, offset, chordInfo)
-
-	case "VI":
-		offset = 5
-		upperRomanChord(chord, pattern, offset, chordInfo)
-		(*chord)[1].Halfsteps -= 1 // 3 is bumped down
-
-	case "VII":
-		offset = 6
-		upperRomanChord(chord, pattern, offset, chordInfo)
-
-	case "i":
-		offset = 0
-		upperRomanChord(chord, pattern, offset, chordInfo)
-		if keyType == "minor_natural" {
-			// no change for minor
-		} else {
-			(*chord)[1].Halfsteps += 1 // 3 is bumped up for major?
-
+	}
+	if offset == -999 {
+		for i, v := range offsetMajorIndex {
+			if v == romanOut {
+				offset = i
+				romanChange = "up"
+				break
+			}
 		}
-
-	case "ii":
-		offset = 1
-		upperRomanChord(chord, pattern, offset, chordInfo)
-
-	case "iii":
-		offset = 2
-		upperRomanChord(chord, pattern, offset, chordInfo)
-	case "iv":
-		offset = 3
-		upperRomanChord(chord, pattern, offset, chordInfo)
-		(*chord)[1].Halfsteps -= 1 // 3 is bumped up
-
-	case "v":
-		offset = 4
-		upperRomanChord(chord, pattern, offset, chordInfo)
-		(*chord)[1].Halfsteps -= 1 // 3 is bumped down
-
-	case "vi":
-		offset = 5
-		upperRomanChord(chord, pattern, offset, chordInfo)
-	case "vii":
-		offset = 6
-		upperRomanChord(chord, pattern, offset, chordInfo)
-
-		// no change if vii, diminished brings down the fifth?
+	}
+	if offset == -999 {
+		for i, v := range offsetMinorIndex {
+			if v == romanOut {
+				offset = i
+				romanChange = "down"
+				break
+			}
+		}
 
 	}
-	//println(types.StringAllNotes(chord), "before modifiers")
-	handleModifiers(roman, chord)
+	if offset == -999 {
+		log.Error().Msgf("offset not found, using 0 %s" + chord.Chord)
+		offset = 0
+	}
+	chordRequest := types.ChordRequest{}
+	chordRequest.Chord = chord
+	chordRequest.RomanType = romanChange
+	chordRequest.ChordNotes = upperRomanChord(chord, offset)
+
+	if romanChange == "up" && len(chord.Pattern) >= 2 {
+		//it's a minor like i, ii, iii, turn the upper roman chord into a minor
+		chordRequest.ChordNotes[1].Halfsteps = 1
+	}
+	if romanChange == "down" && len(chord.Pattern) >= 2 {
+		//it's a minor like i, ii, iii, turn the upper roman chord into a minor
+		chordRequest.ChordNotes[1].Halfsteps = -1
+	}
+	if romanChange == "none" && len(chord.Pattern) >= 2 {
+		//it's a minor like i, ii, iii, turn the upper roman chord into a minor
+		chordRequest.ChordNotes[1].Halfsteps = 0
+	}
+
+	handleModifiers(&chordRequest)
+
+	return chordRequest.ChordNotes
 	//println(types.StringAllNotes(chord), "after modifiers")
+}
+func HandleMajor(chord types.Chord) []types.NBEFNoteRequest {
+
+	romanOut := getRomanOnly(chord.Chord)
+	if romanOut == "" {
+		// assume it's a letter, handle that.
+		return HandleLetter(chord)
+	}
+	return HandleRomanChord(chord, romanOut)
+
 }

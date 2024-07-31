@@ -30,30 +30,35 @@ type Maml struct {
 	Phrases   map[string]Phrase `yaml:"phrases"`
 }
 
-func notesToString(notes *[]types.NBEFNote) string {
+func notesToString(notes *[]types.NBEFNoteRequest) string {
 	result := ""
-	for _, note := range *notes {
-		result += note.String() + "\n"
+	for i, note := range *notes {
+		if i == 0 {
+			result += note.String() + "\n"
+		} else {
+			result += note.String("SELECT") + "\n"
+		}
 	}
 	return result
 }
-func GenerateYaml(notes *[]types.NBEFNote) Maml {
+func GenerateYaml(notes *[]types.NBEFNoteRequest) Maml {
 	maml := Maml{}
-	maml.Header.SavePath = "C:/projects/music-user-reform/save"
+	maml.Header.SavePath = "/mnt/c/projects/music-user-reform/save"
 	maml.Nicknames.Notes = []NicknameNote{}
 	maml.Nicknames.Notes = append(maml.Nicknames.Notes,
-		NicknameNote{Name: "header",
-			Value: "tempo:120,time:0,key_type:major,key_note:C4"})
+		NicknameNote{Name: "sample",
+			Value: `note:4,time:P+1/4\n
+tempo:120,time:0,key_type:major,key_note:C4`})
 	maml.Phrases = map[string]Phrase{}
 	phrase := Phrase{}
 	phrase.Type = "fornof.standard"
-	phrase.OutputMidi = "midi/goosbumps.mid"
-	phrase.Input.Notes = `$header` + "\n" + notesToString(notes)
+	phrase.OutputMidi = "midi/goosebumps.mid"
+	phrase.Input.Notes = notesToString(notes)
 	maml.Phrases["phrase.standard.1"] = phrase
 	return maml
 }
 
-func StringNotesYaml(notes *[]types.NBEFNote) string {
+func StringNotesYaml(notes *[]types.NBEFNoteRequest) string {
 	maml := GenerateYaml(notes)
 	result, _ := yaml.Marshal(maml)
 	println(result)

@@ -1,37 +1,133 @@
 package src
 
 import (
+	"strconv"
+	"strings"
+
 	"fornof.me/m/v2/src/scales"
 	"fornof.me/m/v2/src/types"
+	"github.com/rs/zerolog/log"
 )
 
-func HandleBaseRoman(roman string, pattern []int, keyType string, chordInfo *[]types.NBEFNote) []types.NBEFNote {
-	chord := []types.NBEFNote{}
+func HandleBaseRoman(chord types.Chord) []types.NBEFNoteRequest {
+	noteReturn := []types.NBEFNoteRequest{}
 
-	switch keyType {
+	switch chord.ChordType {
 	case types.Constants.Major:
-		scales.HandleMajor(roman, &chord, pattern, chordInfo, types.Constants.Major)
-	case types.Constants.MinorNatural:
-		scales.HandleMajor(roman, &chord, pattern, chordInfo, types.Constants.MinorNatural)
-	case types.Constants.MinorHarmonic:
-		scales.HandleMinorHarmonic(roman, &chord, pattern, chordInfo)
-	case types.Constants.MinorMelodic:
-		scales.HandleMinorMelodic(roman, &chord, pattern, chordInfo)
+		noteReturn = append(noteReturn, scales.HandleMajor(chord)...)
+	// case types.Constants.MinorNatural:
+	// 	scales.HandleMajor(roman, &noteReturn, pattern, chordInfo, types.Constants.MinorNatural)
+	// case types.Constants.MinorHarmonic:
+	// 	scales.HandleMinorHarmonic(roman, &noteReturn, pattern, chordInfo)
+	// case types.Constants.MinorMelodic:
+	// 	scales.HandleMinorMelodic(roman, &noteReturn, pattern, chordInfo)
 	default:
-		println("keyType not implemented:", keyType)
+		println("keyType not implemented:", chord.ChordType)
+		noteReturn = append(noteReturn, chord.ChordInfo)
 	}
 
-	return chord
+	if chord.TimeSec != "" {
+		noteReturn = append(noteReturn, types.NBEFNoteRequest{TimeSec: chord.TimeSec})
+	}
+	return noteReturn
+}
+func ParseStringToChordList(chordStr string) []types.Chord {
+	romanLines := strings.Split(chordStr, "\n")
+
+	chordList := []types.Chord{}
+
+	for _, r := range romanLines {
+		if r == "" {
+			continue
+		}
+
+		currentChord := types.Chord{}
+		values := strings.Split(r, ",")
+		for _, v := range values {
+
+			if v == "" {
+				continue
+			}
+			entry := strings.Split(v, ":")
+			key := strings.Trim(entry[0], " \t\n,")
+			value := strings.Trim(entry[1], " \t\n,")
+			switch key {
+			case "chord":
+				currentChord.Chord = value
+				log.Info().Msgf("inchord %s", value)
+			case "chord_type":
+				currentChord.ChordType = value
+			case "chord_pattern":
+				pattern := strings.Split(value, "|")
+				for _, p := range pattern {
+					pInt, err := strconv.Atoi(p)
+					if err != nil {
+						println("error parsing int for pattern", p)
+					}
+					currentChord.Pattern = append(currentChord.Pattern, pInt)
+				}
+			case "split":
+				isSplit, err := strconv.ParseBool(value)
+				if err != nil {
+					println("error parsing bool", value)
+				}
+				currentChord.IsSplit = isSplit
+			case "time":
+				currentChord.TimeSec = value
+			case "tempo":
+				tempo, err := strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					log.Error().Msgf("error parsing int for tempo %s", value)
+				}
+				currentChord.ChordInfo.Tempo = int(tempo)
+			case "key_type":
+				currentChord.ChordInfo.KeyType = value
+			case "key_note":
+				currentChord.ChordInfo.KeyNote = value
+			case "offset":
+				offset, err := strconv.ParseInt(value, 10, 64)
+				currentChord.Offset = int(offset)
+				if err != nil {
+					log.Error().Msgf("error parsing int for offset %s", value)
+				}
+			default:
+				println("default, could not find key value", key, value)
+
+			}
+			if currentChord.TimeSec == "" {
+				currentChord.TimeSec = "P"
+			}
+
+		}
+		chordList = append(chordList, currentChord)
+	}
+	return chordList
+}
+func ParseChordList(chordList *[]types.Chord) []types.NBEFNoteRequest {
+
+	outNotes := []types.NBEFNoteRequest{}
+	for _, chord := range *chordList {
+		// major, melodic minor, harmonic minor, natural minor. 7th chords
+		// slash chords
+		outNotes = append(outNotes, FindNotesForChord(chord)...)
+	}
+	return outNotes
 }
 
-func FindNotesForChord(roman string, keyType string, chordInfo *[]types.NBEFNote) []types.NBEFNote {
+func FindNotesForChord(chord types.Chord) []types.NBEFNoteRequest {
+	if chord.Pattern == nil {
+		chord.Pattern = []int{0, 2, 4}
+	}
+	if chord.ChordType == "" {
+		chord.ChordType = types.Constants.Major
+	}
+	if chord.Chord == "" {
+		return []types.NBEFNoteRequest{chord.ChordInfo}
+	}
+	println("CHORD_START", chord.Chord, chord.ChordType)
+	// split into just chord
 
-	pattern := []int{0, 2, 4}
-	chord := HandleBaseRoman(roman, pattern, keyType, chordInfo)
-	//handleModifiers(roman, &chord)
-	//handleNumbers(roman, &chord)
-	//handleSharpsFlats(roman, &chord)
-	return chord
+	return HandleBaseRoman(chord)
 }
 func FindOffset(roman string, offsetNumeralArray []string) int {
 	offset := 0
@@ -42,7 +138,7 @@ func FindOffset(roman string, offsetNumeralArray []string) int {
 	}
 	return offset
 }
-func MakeChord(root_note int, offset int, pattern []int, halfsteps []int) []types.NBEFNote {
+func MakeChord(root_note int, offset int, pattern []int, halfsteps []int) []types.NBEFNoteRequest {
 	// todo , have the option to have root note as a letter.
 	if len(pattern) == 0 {
 		pattern = []int{0, 2, 4}
@@ -52,10 +148,10 @@ func MakeChord(root_note int, offset int, pattern []int, halfsteps []int) []type
 	}
 	count := len(pattern)
 
-	chord := []types.NBEFNote{}
+	chord := []types.NBEFNoteRequest{}
 	for i := range count - 1 {
-		nextNote := root_note + offset + pattern[i]
-		note := types.NBEFNote{Note: &nextNote, Halfsteps: halfsteps[i%len(halfsteps)]}
+		nextNote := strconv.Itoa(root_note + offset + pattern[i])
+		note := types.NBEFNoteRequest{Note: &nextNote, Halfsteps: halfsteps[i%len(halfsteps)]}
 		if i == 0 {
 			note.Label = "root_note"
 		}
