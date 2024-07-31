@@ -5,7 +5,22 @@ import (
 	"strings"
 )
 
-type NBEFNote struct {
+type ChordRequest struct {
+	Chord      Chord
+	RomanType  string
+	ChordNotes []NBEFNoteRequest
+}
+type Chord struct {
+	Chord     string // this is I, IV, i, #ivO, F/G, IV/G, F_1/3 (first inversion) base is 3rd note
+	IsSplit   bool
+	Offset    int             // offset on the number on the scale
+	ChordType string          // major, minor_natural, minor_harmonic, minor_melodic
+	Pattern   []int           // this is the pattern for the chord, to be read by NotesOut render
+	ChordInfo NBEFNoteRequest // chord info for entire chord, to be read by NotesOut render
+	TimeSec   string          // this is time for entire chord, to be read by NotesOut render
+}
+
+type NBEFNoteRequest struct {
 	Midi          int               `yaml:"midi,omitempty"`
 	Signal        string            `yaml:"signal,omitempty"`
 	TimeSec       string            `yaml:"time_s,omitempty"`
@@ -18,7 +33,7 @@ type NBEFNote struct {
 	Tempo         int               `yaml:"tempo,omitempty"`
 	KeyNote       string            `yaml:"key_note,omitempty"`
 	KeyType       string            `yaml:"key_type,omitempty"`
-	Note          *int              `yaml:"note,omitempty"`
+	Note          *string           `yaml:"note,omitempty"`
 	Muted         bool              `yaml:"muted,omitempty"`
 	Label         string            `yaml:"label,omitempty"`
 	Duration      string            `yaml:"duration,omitempty"`
@@ -28,16 +43,46 @@ type NBEFNote struct {
 	Entries       map[string]string `yaml:"entries,omitempty"`
 }
 
-func (n NBEFNote) String() string {
-
-	if n.Note != nil {
-		return fmt.Sprintf("halfsteps:%d,time:%s,note:%d", n.Halfsteps, n.TimeSec, *n.Note)
+func (n NBEFNoteRequest) String(filter ...string) string {
+	builder := strings.Builder{}
+	if len(filter) != 0 {
+		if n.Note != nil {
+			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
+		}
+		if n.Halfsteps != 0 {
+			builder.WriteString(fmt.Sprintf("halfsteps:%d,", n.Halfsteps))
+		}
+		if n.TimeSec != "" {
+			builder.WriteString(fmt.Sprintf("time:%s,", n.TimeSec))
+		}
 	} else {
-		return fmt.Sprintf("halfsteps:%d,time:%s", n.Halfsteps, n.TimeSec)
+		if n.Note != nil {
+			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
+		}
+		if n.Halfsteps != 0 {
+			builder.WriteString(fmt.Sprintf("halfsteps:%d,", n.Halfsteps))
+		}
+		if n.TimeSec != "" {
+			builder.WriteString(fmt.Sprintf("time:%s,", n.TimeSec))
+		}
+		if n.KeyNote != "" {
+			builder.WriteString(fmt.Sprintf("key_note:%s,", n.KeyNote))
+
+		}
+		if n.KeyType != "" {
+			builder.WriteString(fmt.Sprintf("key_type:%s,", n.KeyType))
+
+		}
+		if n.Tempo != 0 {
+			builder.WriteString(fmt.Sprintf("tempo:%d,", n.Tempo))
+		}
+
 	}
+
+	return builder.String()[0 : builder.Len()-1]
 }
 
-func StringAllNotes(n *[]NBEFNote) string {
+func StringAllNotes(n *[]NBEFNoteRequest) string {
 	result := []string{}
 	for _, note := range *n {
 		result = append(result, note.String())

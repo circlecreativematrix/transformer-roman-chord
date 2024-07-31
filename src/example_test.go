@@ -2,82 +2,129 @@ package src
 
 import (
 	"os"
-	"strings"
 	"testing"
+	"time"
 
 	"fornof.me/m/v2/src/services"
-	"fornof.me/m/v2/src/types"
+	"github.com/stretchr/testify/assert"
 )
 
+func TestChordListToNotes(t *testing.T) {
+	t.Run("testing chord list to notes", func(t *testing.T) {
+		//chord_pattern:0|2|4|8
+		roman := `
+		tempo:120,key_note:C4,key_type:major
+		chord:I,split:0,chord_type:major,time:P+1/4
+		chord:ii
+		chord:iii 
+		chord:IV 
+		chord:V
+		chord:vi 
+		chord:viiO`
+		//roman := []string
+		chordList := ParseStringToChordList(roman)
+		outNotes := ParseChordList(&chordList)
+		assert.Equal(t, *outNotes[1].Note, "0")
+		assert.Equal(t, outNotes[0].KeyType, "major")
+	})
+}
+func TestLetterChords(t *testing.T) {
+	t.Run("testing letter chords", func(t *testing.T) {
+		roman := `
+			    chord:C4,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
+				chord:D4,time:P+1/4
+				chord:E,time:P+1/4
+				chord:F,time:P+1/4
+				chord:G,time:P+1/4
+				chord:A,time:P+1/4
+				chord:B,time:P+1/4
+				chord:C,offset:7,time:P+1/4`
+
+		chordList := ParseStringToChordList(roman)
+		outNotes := ParseChordList(&chordList)
+		yamlOutMaml := services.StringNotesYaml(&outNotes)
+		t.Log(string(yamlOutMaml))
+	})
+}
 func TestYamlMamlOutput(t *testing.T) {
 	t.Run("testing output yaml", func(t *testing.T) {
-		key := "major"
-		roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO"}
 
-		outNotes := []types.NBEFNote{}
-		for _, r := range roman {
+		//roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO", "I"}
+		//roman := []string{"i", "iiO", "III", "iv", "v", "VI", "VII"}
+		roman := `
+			    chord:I,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
+				chord:ii,time:P+1/4
+				chord:iii,time:P+1/4
+				chord:IV,time:P+1/4
+				chord:V,time:P+1/4
+				chord:vi,time:P+1/4
+				chord:viiO,time:P+1/4
+				chord:I,offset:7,time:P+1/4`
 
-			chordInfo := types.NBEFNote{KeyType: "major", KeyNote: "C4", TimeSec: "P"}
-			notes := FindNotesForChord(r, key, &[]types.NBEFNote{chordInfo})
-			outNotes = append(outNotes, notes...)
-			outNotes = append(outNotes, types.NBEFNote{Note: nil, KeyType: "major", KeyNote: "C4", TimeSec: "P+1/4"})
-
-			//t.Log(results)
-		}
+		chordList := ParseStringToChordList(roman)
+		outNotes := ParseChordList(&chordList)
 		yamlOutMaml := services.StringNotesYaml(&outNotes)
-		t.Log(yamlOutMaml)
+		t.Log(string(yamlOutMaml))
 
 		// out to file
 		path := "/mnt/c/projects/music-user-reform/converter-standard-note"
 		name := "maml_test.yml"
-		os.WriteFile(path+"/"+name, []byte(yamlOutMaml), 0644)
-	})
-}
-func TestFindNotesForChord(t *testing.T) {
-	t.Run("testing I", func(t *testing.T) {
-		result := FindNotesForChord("I", "major", &[]types.NBEFNote{{Note: nil}})
-		println(len(result), "len of result")
-		if *result[0].Note != 0 ||
-			*result[1].Note != 2 ||
-			*result[2].Note != 4 {
-			t.Errorf("Expected %v, got %v", []int{0, 2, 4}, []int{*result[0].Note, *result[1].Note, *result[2].Note})
+		err := os.WriteFile(path+"/"+name, []byte(yamlOutMaml), 0644)
+		if err != nil {
+			t.Error(err)
 		}
-	})
-
-	t.Run("output a C major scale", func(t *testing.T) {
-		key := "major"
-		roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO"}
-		results := []string{}
-		results = append(results, "key_type:major,key_note:C4,tempo:60")
-		for _, r := range roman {
-			chordInfo := types.NBEFNote{Note: nil, KeyType: "major", KeyNote: "C", TimeSec: "P"}
-			notes := FindNotesForChord(r, key, &[]types.NBEFNote{chordInfo})
-			for _, note := range notes {
-				results = append(results, note.String())
-			}
-			results = append(results, "time:P+1/4\n")
-			//t.Log(results)
-		}
-
-		out := "notes: \"" + strings.Join(results, "\n") + "\""
-		t.Log(out)
-		// out to file
-		path := "/mnt/c/projects/music-user-reform/converter-standard-note"
-		name := "c_major_scale.yml"
-		os.WriteFile(path+"/"+name, []byte(out), 0644)
-		//execute a system call and change directory to converter_standard_note
-		//command := "." + path + "/standard-converter.exe --input " + name + " --output " + name
-		// command := "ls /mnt/c/projects"
-		// cmdSplit := strings.Split(command, " ")
-		// cmd := exec.Command("/bin/sh", cmdSplit...)
-		// t.Log(cmd)
-		// outer := bytes.Buffer{}
-		// cmd.Stdout = &outer
-		// err := cmd.Run()
-		// fmt.Printf("%s\n", outer.String())
-		// if err != nil {
-		// 	t.Error(err)
-		// }
+		t.Log("wrote to file", path+"/"+name)
+		//sleep 5 seconds
+		time.Sleep(2 * time.Second)
 
 	})
 }
+
+// func TestFindNotesForChord(t *testing.T) {
+// 	t.Run("testing I", func(t *testing.T) {
+// 		result := FindNotesForChord("I", "major", &[]types.NBEFNoteRequest{{Note: nil}})
+// 		println(len(result), "len of result")
+// 		if *result[0].Note != "0" ||
+// 			*result[1].Note != "2" ||
+// 			*result[2].Note != "4" {
+// 			t.Errorf("Expected %v, got %v", []int{0, 2, 4}, []string{*result[0].Note, *result[1].Note, *result[2].Note})
+// 		}
+// 	})
+
+// 	t.Run("output a C major scale", func(t *testing.T) {
+// 		key := "major"
+// 		roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO"} // melodic minor?
+// 		results := []string{}
+// 		results = append(results, "key_type:major,key_note:C4,tempo:60")
+// 		for _, r := range roman {
+// 			chordInfo := types.NBEFNoteRequest{Note: nil, KeyType: "major", KeyNote: "C", TimeSec: "P"}
+// 			notes := FindNotesForChord(r, key, &[]types.NBEFNoteRequest{chordInfo})
+// 			for _, note := range notes {
+// 				results = append(results, note.String())
+// 			}
+// 			results = append(results, "time:P+1/4\n")
+// 			//t.Log(results)
+// 		}
+
+// 		out := "notes: \"" + strings.Join(results, "\n") + "\""
+// 		t.Log(out)
+// 		// out to file
+// 		path := "/mnt/c/projects/music-user-reform/converter-standard-note"
+// 		name := "c_major_scale.yml"
+// 		os.WriteFile(path+"/"+name, []byte(out), 0644)
+// 		//execute a system call and change directory to converter_standard_note
+// 		//command := "." + path + "/standard-converter.exe --input " + name + " --output " + name
+// 		// command := "ls /mnt/c/projects"
+// 		// cmdSplit := strings.Split(command, " ")
+// 		// cmd := exec.Command("/bin/sh", cmdSplit...)
+// 		// t.Log(cmd)
+// 		// outer := bytes.Buffer{}
+// 		// cmd.Stdout = &outer
+// 		// err := cmd.Run()
+// 		// fmt.Printf("%s\n", outer.String())
+// 		// if err != nil {
+// 		// 	t.Error(err)
+// 		// }
+
+// 	})
+// }

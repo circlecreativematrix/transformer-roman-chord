@@ -2,9 +2,11 @@ package main
 
 func main() {
 	// assuming key is C
-	chord := ConvertNotationToChord("vii*", "major", 0)
-	for _, note := range chord {
-		println(note.Note)
-	}
+
+	// chordInfo := types.NBEFNoteRequest{KeyType: "major", KeyNote: "C", TimeSec: "P+1/4"}
+	// chord := src.FindNotesForChord("vii", "major", &[]types.NBEFNoteRequest{chordInfo})
+	// for _, note := range chord {
+	// 	println(note.Note)
+	// }
 
 }
