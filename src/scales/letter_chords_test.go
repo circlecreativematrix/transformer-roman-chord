@@ -69,8 +69,8 @@ func TestLetterChords(t *testing.T) {
 		chord := types.Chord{Chord: "B3M", ChordInfo: types.NBEFNoteRequest{TimeSec: "P"}}
 		result := HandleLetter(chord)
 		assert.Equal(t, "B3", *(result[0].Note))
-		assert.Equal(t, "D4", *(result[1].Note))
-		assert.Equal(t, "G4", *(result[2].Note))
+		assert.Equal(t, "D4#", *(result[1].Note))
+		assert.Equal(t, "F4#", *(result[2].Note))
 	})
 
 	t.Run("testing HandleLetter C4m", func(t *testing.T) {
@@ -80,4 +80,13 @@ func TestLetterChords(t *testing.T) {
 		assert.Equal(t, "D4#", *(result[1].Note))
 		assert.Equal(t, "G4", *(result[2].Note))
 	})
+	t.Run("testing HandleLetter C4m/D5m", func(t *testing.T) {
+		chord := types.Chord{Chord: "C4m/D#", ChordInfo: types.NBEFNoteRequest{TimeSec: "P"}}
+		result := HandleLetter(chord)
+		assert.Equal(t, "C4", *(result[0].Note))
+		assert.Equal(t, "D4#", *(result[1].Note))
+		assert.Equal(t, "G4", *(result[2].Note))
+		assert.Equal(t, "D4#", *(result[3].Note))
+	})
+	
 }

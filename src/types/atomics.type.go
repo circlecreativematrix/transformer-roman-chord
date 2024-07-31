@@ -6,4 +6,5 @@ type Atomic struct {
 	Halfstep int
 	IsMinor  bool // if m is present, it is minor, otherwise it is Major
 	FullNote string
+	BaseNote string
 }

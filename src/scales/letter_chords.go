@@ -11,6 +11,12 @@ import (
 func getAtomicFromLetter(letterChord string) types.Atomic {
 	// can I write diminished O or + augmented?
 	letterRegex, _ := regexp.Compile("([A-Ga-g]+)([0-9]?)([#@]?)([Mm]?)")
+	fullChord := strings.Split(letterChord, "/")
+	if len(fullChord) > 1 {
+		atomic := getAtomicFromLetter(fullChord[0])
+		atomic.BaseNote = fullChord[1]
+		return atomic
+	}
 	letter := letterRegex.FindAllStringSubmatch(letterChord, -1)
 	atomic := types.Atomic{
 		Letter:   letter[0][1],
@@ -49,7 +55,8 @@ func getNoteFromMidi(midi int) *string {
 	strOut := strings.ToUpper(services.Midi_to_letter[midi])
 	return &strOut
 }
-func getNotesFromAtomicAndChord(chord types.Chord, atomic types.Atomic) []types.NBEFNoteRequest {
+func HandleLetter(chord types.Chord) []types.NBEFNoteRequest {
+	atomic := getAtomicFromLetter(chord.Chord)
 	// get the start note
 	chordNotes := []types.NBEFNoteRequest{}
 	startNote := getMidiNoteFromAtomic(atomic)
@@ -57,15 +64,18 @@ func getNotesFromAtomicAndChord(chord types.Chord, atomic types.Atomic) []types.
 	if atomic.IsMinor {
 		offsetHalfstepPattern = []int{0, 3, 7}
 	}
+
 	for i := 0; i < 3; i++ {
 		note := chord.ChordInfo
 		note.Note = getNoteFromMidi(startNote + offsetHalfstepPattern[i])
 		chordNotes = append(chordNotes, note)
 	}
+	if atomic.BaseNote != "" {
+		note := chord.ChordInfo
+		baseAtomic := getAtomicFromLetter(atomic.BaseNote)
+		note.Note = getNoteFromMidi(getMidiNoteFromAtomic(baseAtomic))
+		chordNotes = append(chordNotes, note)
+	}
 
 	return chordNotes
-}
-func HandleLetter(chord types.Chord) []types.NBEFNoteRequest {
-	atomic := getAtomicFromLetter(chord.Chord)
-	return getNotesFromAtomicAndChord(chord, atomic)
 }
