@@ -67,6 +67,7 @@ func HandleLetter(chord types.Chord) []types.NBEFNoteRequest {
 
 	for i := 0; i < 3; i++ {
 		note := chord.ChordInfo
+
 		note.Note = getNoteFromMidi(startNote + offsetHalfstepPattern[i])
 		chordNotes = append(chordNotes, note)
 	}
@@ -76,6 +77,16 @@ func HandleLetter(chord types.Chord) []types.NBEFNoteRequest {
 		note.Note = getNoteFromMidi(getMidiNoteFromAtomic(baseAtomic))
 		chordNotes = append(chordNotes, note)
 	}
-
-	return chordNotes
+	//outputNotes is the arrangement of notes in the chord
+	outputNotes := chordNotes
+	if len(chord.Pattern) > 0 {
+		outputNotes = []types.NBEFNoteRequest{}
+		for i := 0; i < len(chord.Pattern); i++ {
+			note := chordNotes[chord.Pattern[i]%(len(chordNotes))]
+			note.TimeSec = chord.TimeSec[i%(len(chord.TimeSec))]
+			note.Duration = GetFractionFromTime(note.TimeSec)
+			outputNotes = append(outputNotes, note)
+		}
+	}
+	return outputNotes
 }

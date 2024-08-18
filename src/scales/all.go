@@ -20,8 +20,18 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func GetFractionFromTime(time string) string {
+	r, _ := regexp.Compile(`(\d+\/\d+)`)
+	fraction := r.FindString(time)
+	if fraction != "" {
+		return fraction
+	} else {
+		log.Error().Msg("no fraction for duration")
+		return ""
+	}
+}
 func getRomanOnly(roman string) string {
-	regRomanOnly, _ := regexp.Compile("([ivIVXCxc]+)")
+	regRomanOnly, _ := regexp.Compile("([ivIV]+)")
 	return regRomanOnly.FindString(roman)
 }
 func HandleDiminished(chordRequest *types.ChordRequest) {
@@ -51,7 +61,11 @@ func HandleDiminished(chordRequest *types.ChordRequest) {
 		// 	// get to a minor first if a major
 		// 	chordRequest.ChordNotes[1].Halfsteps -= 1
 		// }
-		chordRequest.ChordNotes[2].Halfsteps = -1
+		if chordRequest.RomanType == "up" {
+			chordRequest.ChordNotes[2].Halfsteps += 1
+		} else {
+			chordRequest.ChordNotes[2].Halfsteps -= 1
+		}
 
 	}
 	if strings.Contains(modifiersOut, "o") {
@@ -107,11 +121,11 @@ func upperRomanChord(chord types.Chord, offset int) []types.NBEFNoteRequest {
 	if chord.ChordInfo.TimeSec == "" {
 		chord.ChordInfo.TimeSec = "P"
 	}
+	pattern := []int{0, 2, 4}
+	for i := 0; i < len(pattern); i++ {
 
-	for i := 0; i < len(chord.Pattern); i++ {
-		println("note", chord.Pattern[i]+offset)
 		info := chord.ChordInfo // copies last of the chord infos
-		offPattern := strconv.Itoa(chord.Pattern[i] + offset + chord.Offset)
+		offPattern := strconv.Itoa(pattern[i] + offset + chord.Offset)
 		info.Note = &offPattern
 		outNotes = append(outNotes, info)
 	}
