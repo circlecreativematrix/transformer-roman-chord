@@ -3,12 +3,10 @@ package src
 // dominant
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
-	"time"
 
-	"fornof.me/m/v2/src/services"
+	"fornof.me/m/v2/src/scales"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,8 +23,8 @@ func TestChordListToNotes(t *testing.T) {
 		chord:vi 
 		chord:viiO`
 		//roman := []string
-		chordList := ParseStringToChordList(roman)
-		outNotes := ParseChordList(&chordList)
+		chordList := scales.ParseStringToChordList(roman)
+		outNotes := scales.ParseChordList(&chordList)
 		assert.Equal(t, *outNotes[1].Note, "0")
 		assert.Equal(t, outNotes[0].KeyType, "major")
 	})
@@ -39,8 +37,8 @@ func TestIsSplit(t *testing.T) {
 		tempo:120,key_note:C4,key_type:major
 		chord:I,split:1,time:P+1/4`
 		//roman := []string
-		chordList := ParseStringToChordList(roman)
-		outNotes := ParseChordList(&chordList)
+		chordList := scales.ParseStringToChordList(roman)
+		outNotes := scales.ParseChordList(&chordList)
 		assert.Equal(t, outNotes[1].TimeSec, "P+1/4")
 		assert.Equal(t, outNotes[2].TimeSec, "P+1/4")
 		assert.Equal(t, outNotes[2].TimeSec, "P+1/4")
@@ -52,22 +50,22 @@ func TestIsSplit(t *testing.T) {
 }
 
 func TestLetterChords(t *testing.T) {
-	t.Run("testing letter chords", func(t *testing.T) {
-		roman := `
-			    chord:C,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
-				chord:C4#M,time:P+1/4
-				chord:E,time:P+1/4
-				chord:FM,time:P+1/4
-				chord:Gm,time:P+1/4
-				chord:A,time:P+1/4
-				chord:B,time:P+1/4
-				chord:C,offset:7,time:P+1/4`
+	// t.Run("testing letter chords", func(t *testing.T) {
+	// 	roman := `
+	// 		    chord:C,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
+	// 			chord:C4#M,time:P+1/4
+	// 			chord:E,time:P+1/4
+	// 			chord:FM,time:P+1/4
+	// 			chord:Gm,time:P+1/4
+	// 			chord:A,time:P+1/4
+	// 			chord:B,time:P+1/4
+	// 			chord:C,offset:7,time:P+1/4`
 
-		chordList := ParseStringToChordList(roman)
-		outNotes := ParseChordList(&chordList)
-		yamlOutMaml := services.StringNotesYaml(&outNotes)
-		t.Log(string(yamlOutMaml))
-	})
+	// 	chordList := scales.ParseStringToChordList(roman)
+	// 	outNotes := scales.ParseChordList(&chordList)
+	// 	yamlOutMaml := services.StringNotesYaml(&outNotes)
+	// 	t.Log(string(yamlOutMaml))
+	// })
 }
 func rest(time string) string {
 	return fmt.Sprintf("time:%s", time)
@@ -105,32 +103,33 @@ func outMajor() string {
 				chord:VII,time:P+1/4
 				chord:I,offset:7,time:P+1/4`
 }
-func TestYamlMamlOutput(t *testing.T) {
-	t.Run("testing output yaml", func(t *testing.T) {
 
-		//roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO", "I"}
-		//roman := []string{"i", "iiO", "III", "iv", "v", "VI", "VII"}
-		outputChords := funkyTown() //outMajor()
-		//chordsOfNote := []string{"I", "V", "vi", "IV"}
+// func TestYamlMamlOutput(t *testing.T) {
+// 	t.Run("testing output yaml", func(t *testing.T) {
 
-		chordList := ParseStringToChordList(outputChords)
-		outNotes := ParseChordList(&chordList)
-		yamlOutMaml := services.StringNotesYaml(&outNotes)
-		t.Log(string(yamlOutMaml))
+// 		//roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO", "I"}
+// 		//roman := []string{"i", "iiO", "III", "iv", "v", "VI", "VII"}
+// 		outputChords := funkyTown() //outMajor()
+// 		//chordsOfNote := []string{"I", "V", "vi", "IV"}
 
-		// out to file
-		path := "/mnt/c/projects/music-user-reform/converter-standard-note"
-		name := "maml_test.yml"
-		err := os.WriteFile(path+"/"+name, []byte(yamlOutMaml), 0644)
-		if err != nil {
-			t.Error(err)
-		}
-		t.Log("wrote to file", path+"/"+name)
-		//sleep 5 seconds
-		time.Sleep(2 * time.Second)
+// 		chordList := ParseStringToChordList(outputChords)
+// 		outNotes := ParseChordList(&chordList)
+// 		yamlOutMaml := services.StringNotesYaml(&outNotes)
+// 		t.Log(string(yamlOutMaml))
 
-	})
-}
+// 		// out to file
+// 		path := "/mnt/c/projects/music-user-reform/converter-standard-note"
+// 		name := "maml_test.yml"
+// 		err := os.WriteFile(path+"/"+name, []byte(yamlOutMaml), 0644)
+// 		if err != nil {
+// 			t.Error(err)
+// 		}
+// 		t.Log("wrote to file", path+"/"+name)
+// 		//sleep 5 seconds
+// 		time.Sleep(2 * time.Second)
+
+// 	})
+// }
 
 // func TestFindNotesForChord(t *testing.T) {
 // 	t.Run("testing I", func(t *testing.T) {

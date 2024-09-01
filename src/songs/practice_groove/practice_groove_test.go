@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	src "fornof.me/m/v2/src"
+	"fornof.me/m/v2/src/scales"
 	"fornof.me/m/v2/src/services"
 	"fornof.me/m/v2/src/types"
 	"gopkg.in/yaml.v3"
@@ -326,8 +326,8 @@ func TestYamlMamlOutput(t *testing.T) {
 			OutputMidi: "bridge1FrenchPoodle.mid"})
 		maml := services.GenerateMaml("/mnt/c/projects/music-user-reform/savemidi/")
 		for _, phrase := range phrases {
-			chordList := src.ParseStringToChordList(strings.Join(phrase.InNotes, "\n"))
-			phrase.OutNotes = src.ParseChordList(&chordList)
+			chordList := scales.ParseStringToChordList(strings.Join(phrase.InNotes, "\n"))
+			phrase.OutNotes = scales.ParseChordList(&chordList)
 			services.AddToPhrases(&maml, &phrase)
 			// out to file
 

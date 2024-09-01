@@ -8,16 +8,12 @@ package songs
 //
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	src "fornof.me/m/v2/src"
-	"fornof.me/m/v2/src/services"
 	"fornof.me/m/v2/src/types"
-	"gopkg.in/yaml.v3"
 )
 
 var outputChords = []string{}
@@ -228,25 +224,32 @@ func multiplyToStringArray(in *[]string, multiplier int) []string {
 	}
 	return outMultiplied
 }
-func melodyLower(in []string, offset int, multiplier int, output *[]string) {
-	if offset != 0 {
-		in = addToStringArray(&in, offset)
+func multiplyToStringArrayRest(in *[]string, multiplier int) []string {
+	outMultiplied := []string{}
+	for i := 0; i < len(*in); i++ {
+		for j := 0; j < multiplier; j++ {
+			outMultiplied = append(outMultiplied, (*in)[i])
+		}
+		outMultiplied = append(outMultiplied, "")
+
 	}
+	return outMultiplied
+}
+func melodyLower(in []string, offset int, multiplier int, output *[]string) {
 	if multiplier != 0 {
-		in = multiplyToStringArray(&in, multiplier)
+		in = multiplyToStringArrayRest(&in, 3)
 	}
 	// 2 1 3 2 0
 	// 0 1 2 3
 	newNotes := in
 	addToOutput(chords(newNotes, []Beat{
-		{Beat: "P+1/4", Count: 3},
-		{Beat: "P+1/4", Count: 2},
+		{Beat: "P+1/4", Count: 1},
+		{Beat: "P+1/8", Count: 2},
+		{Beat: "P+1/4", Count: 1},
 	}, []string{"vol:100"}), output)
 
 }
 func songLower() {
-
-	melodyLower([]string{"iii", "V/5", "IV/5", "I", }, 0, 0, nil)
 
 	addToOutput(header("bridge2-lower", "F3", "major", "100"), nil)
 	bridgeLower([]string{"iii", "V", "IV", "iii"}, 0, 0, nil)
@@ -258,16 +261,38 @@ func songLower() {
 }
 func singleChorus() []string {
 	outString := []string{}
-	addToOutput([]string{"time:P+1/8,dur:0,track:0"}, &outString)
-	addToOutput(header("intro", key_note[0], "major", "100"), &outString)
-	melody([]string{"0", "1", "2", "3"}, 0, &outString)
-	melody([]string{"0", "1", "2", "3"}, 0, &outString)
-	melody([]string{"0", "1", "2", "3"}, 0, &outString)
-	melody([]string{"0", "1", "2", "3"}, 0, &outString)
-	addToOutput([]string{"time:0"}, &outString)
-	addToOutput([]string{"time:P+8/8,dur:0,track:1"}, &outString)
-	addToOutput(header("intro-lower", key_note[1], "major", "100"), &outString)
-	melodyLower([]string{"I", "iii", "IV", "ii", "VI", "I", "iii", "IV"}, 0, 2, &outString)
+	addToOutput([]string{"time:0,dur:0,track:0"}, &outString)
+	addToOutput(header("intro", key_note[0], "major", "60"), &outString)
+	addToOutput([]string{"chord_type:major,key_note:F3,tempo:60"}, &outString)
+	// addToOutput(chords([]string{"iii", "V/5", "IV/5", "I"}, []Beat{
+	// 	{Beat: "P+1/2", Count: 3},
+	// 	{Beat: "P+1/2", Count: 2},
+	// }, []string{"vol:100"}), &outString)
+	// melodyLower([]string{"I", "iii/5", "vi", "IV/3"}, 0, 0, nil)
+	// // should be same as top, need to get a read on it.
+	// melodyLower([]string{"Am", "C/E", "B@/F", "F"}, 0, 0, nil)
+	// melodyLower([]string{"F", "Am", "Dm", "B@", "F"}, 0, 0, nil)
+	// melody([]string{"0", "1", "2", "3"}, 0, &outString)
+	// melody([]string{"0", "1", "2", "3"}, 0, &outString)
+	// melody([]string{"0", "1", "2", "3"}, 0, &outString)
+	// melody([]string{"0", "1", "2", "3"}, 0, &outString)
+	// addToOutput([]string{"time:0"}, &outString)
+	// addToOutput([]string{"time:P+8/8,dur:0,track:1"}, &outString)
+	// addToOutput(header("intro-lower", key_note[1], "major", "100"), &outString)
+	//"iii", "V/5", "IV/5", "I", "I","iii/5","vi", "IV/3"
+	//"V", "IV", "I", "I", "iii", "vi", "IV"
+	//"V", "IV", "I", "I", "iii", "vi", "IV"
+
+	melodyLower([]string{"iii", "iii", "iii", ""}, 0, 0, &outString)
+	melodyLower([]string{"V", "V", "V", ""}, 0, 0, &outString)
+	melodyLower([]string{"IV", "IV", "IV", ""}, 0, 0, &outString)
+	melodyLower([]string{"I", "I", "I", ""}, 0, 0, &outString)
+	melodyLower([]string{"I", "I", "I", ""}, 0, 0, &outString)
+	melodyLower([]string{"iii", "iii", "iii", ""}, 0, 0, &outString)
+	melodyLower([]string{"vi", "vi", "vi", ""}, 0, 0, &outString)
+	melodyLower([]string{"IV", "IV", "IV", ""}, 0, 0, &outString)
+	chorusStuff(&outString)
+	chorusStuff(&outString)
 	return outString
 }
 func singleBridge() []string {
@@ -285,6 +310,17 @@ func singleBridge() []string {
 	bridgeLower([]string{"iii", "V", "IV", "iii"}, 0, 0, &outString)
 	bridgeLower([]string{"iii", "VI", "V", "IV"}, 0, 0, &outString)
 	return outString
+}
+
+func chorusStuff(outString *[]string) {
+	melodyLower([]string{"iii", "iii", "iii", ""}, 0, 0, outString)
+	melodyLower([]string{"V", "V", "V", ""}, 0, 0, outString)
+	melodyLower([]string{"IV", "IV", "IV", ""}, 0, 0, outString)
+	melodyLower([]string{"I", "I", "I", ""}, 0, 0, outString)
+	melodyLower([]string{"I", "I", "I", ""}, 0, 0, outString)
+	melodyLower([]string{"iii", "iii", "iii", ""}, 0, 0, outString)
+	melodyLower([]string{"vi", "vi", "vi", ""}, 0, 0, outString)
+	melodyLower([]string{"IV", "IV", "IV", ""}, 0, 0, outString)
 }
 
 func singleVerseOne() []string {
@@ -313,38 +349,18 @@ func TestYamlMamlOutput(t *testing.T) {
 			Name:       "chorus",
 			InNotes:    singleChorus(),
 			OutputMidi: "chorus.mid"})
-		phrases = append(phrases, types.Phrase{
-			Type:       "fornof.standard",
-			Name:       "verseOneFrenchPoodle",
-			InNotes:    singleVerseOne(),
-			OutputMidi: "verse1.mid"})
+		// phrases = append(phrases, types.Phrase{
+		// 	Type:       "fornof.standard",
+		// 	Name:       "verseOneFrenchPoodle",
+		// 	InNotes:    singleVerseOne(),
+		// 	OutputMidi: "verse1.mid"})
 
-		phrases = append(phrases, types.Phrase{
-			Type:       "fornof.standard",
-			Name:       "bridgeFrenchPoodle",
-			InNotes:    singleBridge(),
-			OutputMidi: "bridge1FrenchPoodle.mid"})
-		maml := services.GenerateMaml("/mnt/c/projects/music-user-reform/savemidi/")
-		for _, phrase := range phrases {
-			chordList := src.ParseStringToChordList(strings.Join(phrase.InNotes, "\n"))
-			phrase.OutNotes = src.ParseChordList(&chordList)
-			services.AddToPhrases(&maml, &phrase)
-			// out to file
-
-		}
-		resultMamlYamlString, err := yaml.Marshal(maml)
-		if err != nil {
-			t.Error(err)
-		}
-		t.Log(string(resultMamlYamlString))
-		// out to file
-		path := "/mnt/c/projects/music-user-reform/converter-standard-note"
-		name := "maml_test.yml"
-		err = os.WriteFile(path+"/"+name, []byte(resultMamlYamlString), 0644)
-		if err != nil {
-			t.Error(err)
-		}
-		t.Log("wrote to file", path+"/"+name)
+		// phrases = append(phrases, types.Phrase{
+		// 	Type:       "fornof.standard",
+		// 	Name:       "bridgeFrenchPoodle",
+		// 	InNotes:    singleBridge(),
+		// 	OutputMidi: "bridge1FrenchPoodle.mid"})
+		MakeTheSong(phrases)
 		//sleep 5 seconds
 		time.Sleep(2 * time.Second)
 	})

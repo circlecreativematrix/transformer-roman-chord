@@ -78,26 +78,64 @@ func handleModifiers(chordRequest *types.ChordRequest) {
 	HandleDiminished(chordRequest)
 
 }
-func handleNumbers(chordRequest *types.ChordRequest) {
-
-	regNumbers := regexp.MustCompile("/?[_0-9]+")
-	numbersOut := regNumbers.FindString(chordRequest.Chord.Chord)
-	if numbersOut == "" {
-		return
+func getNumbersPastSlash(chord string) string {
+	regNumbers := regexp.MustCompile("/?([_0-9]+)")
+	numbersOut := regNumbers.FindStringSubmatch(chord)
+	if len(numbersOut) < 2 {
+		return ""
 	}
-	splitNumeratorDenominator := strings.Split(numbersOut, "_")
-	numerator := splitNumeratorDenominator[0]
+	return numbersOut[1]
+}
+func getFractionUnderlineSplit(chord string) []string {
+	splitNumeratorDenominator := strings.Split(chord, "_")
+	numerator := ""
 	denominator := ""
 	if len(splitNumeratorDenominator) > 1 {
+		numerator = splitNumeratorDenominator[0]
 		denominator = splitNumeratorDenominator[1]
+		println("numerator", numerator, "denominator", denominator)
+		return []string{numerator, denominator}
 	}
-	if numerator != "" {
-		println("numerator-ignore", numerator)
+	return nil
+}
+
+// adds an offset to each chord note in request, assumes each note in request is number
+func addOffsetToChordNotes(chordNotes *[]types.NBEFNoteRequest, number int64) {
+	offsetPattern := []int{int(number), int(number), int(number)}
+	if number == 3 { //// inversion 1
+		offsetPattern = []int{int(number - 1), int(number - 1), int(number)}
 	}
-	if denominator != "" {
-		println("denominator-ignore", denominator)
+
+	if number == 5 { // inversion 2
+		offsetPattern = []int{int(number - 1), int(number), int(number)} // check again with piano iii/5
 	}
-	println("numerator", numerator, "denominator", denominator)
+	// todo: what do the notes in between look like?
+	for i := 0; i < len(*chordNotes); i++ {
+		noteNum, err := strconv.ParseInt(*((*chordNotes)[i].Note), 10, 64)
+		if err != nil {
+			log.Error().Msgf("error parsing int for note %s", *(*chordNotes)[i].Note)
+		}
+		noteNum += int64(offsetPattern[i%len(offsetPattern)])
+		noteStr := strconv.Itoa(int(noteNum))
+		(*chordNotes)[i].Note = &noteStr
+	}
+	//
+}
+func handleNumbers(chordRequest *types.ChordRequest) {
+	number := getNumbersPastSlash(chordRequest.Chord.Chord)
+	if number == "" {
+		return
+	}
+	//this will fail if I/5 is not a number
+	numberNum, err := strconv.ParseInt(number, 10, 64)
+	if err != nil {
+		log.Error().Msgf("error parsing int for number %s", number)
+		return
+	}
+
+	addOffsetToChordNotes(&chordRequest.ChordNotes, numberNum)
+	// extra feature
+	//getFractionUnderlineSplit(number)
 
 }
 func handleSharpsFlats(chordRequest *types.ChordRequest) {

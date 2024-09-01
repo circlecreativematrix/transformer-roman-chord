@@ -120,6 +120,7 @@ func HandleMajor(chord types.Chord) []types.NBEFNoteRequest {
 	romanOut := getRomanOnly(chord.Chord)
 	if romanOut == "" {
 		// assume it's a letter, handle that.
+		// this needs to probably be upstreams some more
 		return HandleLetter(chord)
 	}
 	return HandleRomanChord(chord, romanOut)

@@ -1,10 +1,9 @@
-package src
+package scales
 
 import (
 	"strconv"
 	"strings"
 
-	"fornof.me/m/v2/src/scales"
 	"fornof.me/m/v2/src/types"
 	"github.com/rs/zerolog/log"
 )
@@ -14,7 +13,7 @@ func HandleBaseRoman(chord types.Chord) []types.NBEFNoteRequest {
 
 	switch chord.ChordType {
 	case types.Constants.Major:
-		noteReturn = append(noteReturn, scales.HandleMajor(chord)...)
+		noteReturn = append(noteReturn, HandleMajor(chord)...)
 	// case types.Constants.MinorNatural:
 	// 	scales.HandleMajor(roman, &noteReturn, pattern, chordInfo, types.Constants.MinorNatural)
 	// case types.Constants.MinorHarmonic:
@@ -143,7 +142,7 @@ func ParseStringToChordList(chordStr string) []types.Chord {
 
 		if currentChord.ChordInfo.Duration == "" && currentChord.TimeSec != nil && len(currentChord.TimeSec) > 0 {
 			//borrow from time
-			currentChord.ChordInfo.Duration = scales.GetFractionFromTime(currentChord.TimeSec[len(currentChord.TimeSec)-1])
+			currentChord.ChordInfo.Duration = GetFractionFromTime(currentChord.TimeSec[len(currentChord.TimeSec)-1])
 		}
 		if (currentChord.ChordInfo.TimeSec == "" || currentChord.ChordInfo.Track == -1) && currentChord.TimeSec == nil && len(currentChord.TimeSec) == 0 {
 			continue
@@ -153,9 +152,6 @@ func ParseStringToChordList(chordStr string) []types.Chord {
 	return chordList
 }
 
-func GetFractionFromTime(s string) {
-	panic("unimplemented")
-}
 func ParseChordList(chordList *[]types.Chord) []types.NBEFNoteRequest {
 
 	outNotes := []types.NBEFNoteRequest{}
@@ -188,7 +184,12 @@ func FindNotesForChord(chord types.Chord) []types.NBEFNoteRequest {
 	}
 	println("CHORD_START", chord.Chord, chord.ChordType)
 	// split into just chord
-
+	romanOut := getRomanOnly(chord.Chord)
+	if romanOut == "" {
+		// assume it's a letter, handle that.
+		// this needs to probably be upstreams some more
+		return HandleLetter(chord)
+	}
 	return HandleBaseRoman(chord)
 }
 func FindOffset(roman string, offsetNumeralArray []string) int {
