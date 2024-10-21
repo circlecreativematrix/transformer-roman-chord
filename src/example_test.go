@@ -3,10 +3,13 @@ package src
 // dominant
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"fornof.me/m/v2/src/scales"
+	"fornof.me/m/v2/src/services"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -104,32 +107,32 @@ func outMajor() string {
 				chord:I,offset:7,time:P+1/4`
 }
 
-// func TestYamlMamlOutput(t *testing.T) {
-// 	t.Run("testing output yaml", func(t *testing.T) {
+func TestYamlMamlOutput(t *testing.T) {
+	t.Run("testing output yaml", func(t *testing.T) {
 
-// 		//roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO", "I"}
-// 		//roman := []string{"i", "iiO", "III", "iv", "v", "VI", "VII"}
-// 		outputChords := funkyTown() //outMajor()
-// 		//chordsOfNote := []string{"I", "V", "vi", "IV"}
+		//roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO", "I"}
+		//roman := []string{"i", "iiO", "III", "iv", "v", "VI", "VII"}
+		outputChords := funkyTown() //outMajor()
+		//chordsOfNote := []string{"I", "V", "vi", "IV"}
 
-// 		chordList := ParseStringToChordList(outputChords)
-// 		outNotes := ParseChordList(&chordList)
-// 		yamlOutMaml := services.StringNotesYaml(&outNotes)
-// 		t.Log(string(yamlOutMaml))
+		chordList := scales.ParseStringToChordList(outputChords)
+		outNotes := scales.ParseChordList(&chordList)
+		yamlOutMaml := services.NotesToString(&outNotes)
+		t.Log(string(yamlOutMaml))
 
-// 		// out to file
-// 		path := "/mnt/c/projects/music-user-reform/converter-standard-note"
-// 		name := "maml_test.yml"
-// 		err := os.WriteFile(path+"/"+name, []byte(yamlOutMaml), 0644)
-// 		if err != nil {
-// 			t.Error(err)
-// 		}
-// 		t.Log("wrote to file", path+"/"+name)
-// 		//sleep 5 seconds
-// 		time.Sleep(2 * time.Second)
+		// out to file
+		path := "/mnt/c/projects/music-user-reform/converter-standard-note"
+		name := "maml_test.yml"
+		err := os.WriteFile(path+"/"+name, []byte(yamlOutMaml), 0644)
+		if err != nil {
+			t.Error(err)
+		}
+		t.Log("wrote to file", path+"/"+name)
+		//sleep 5 seconds
+		time.Sleep(2 * time.Second)
 
-// 	})
-// }
+	})
+}
 
 // func TestFindNotesForChord(t *testing.T) {
 // 	t.Run("testing I", func(t *testing.T) {
