@@ -2,10 +2,8 @@ package songs
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"fornof.me/m/v2/src/scales"
 	"fornof.me/m/v2/src/services"
@@ -36,11 +34,15 @@ func MakeTheSong(phrases types.PhraseList) {
 	// 	Name:       "bridgeFrenchPoodle",
 	// 	InNotes:    singleBridge(),
 	// 	OutputMidi: "bridge1FrenchPoodle.mid"})
-	maml := services.GenerateMaml("/mnt/c/projects/music-user-reform/savemidi/")
+
+	// right now I need to just do a 1:1 chord mapping and output the page via htmx
+	// then go to notes output ---> then call the wasm function
+	// input -> note:A#4,time:P+1/4,beat:1/4,dur:1/4 --> output_text which is standard-note
+	maml := types.Maml{}
 	for _, phrase := range phrases {
 		chordList := scales.ParseStringToChordList(strings.Join(phrase.InNotes, "\n"))
-		phrase.OutNotes = scales.ParseChordList(&chordList)
 		services.AddToPhrases(&maml, &phrase)
+		phrase.OutNotes = scales.ParseChordList(&chordList)
 		// out to file
 
 	}
@@ -50,15 +52,15 @@ func MakeTheSong(phrases types.PhraseList) {
 	}
 	println(string(resultMamlYamlString))
 	// out to file
-	path := "/mnt/c/projects/music-user-reform/converter-standard-note"
-	name := "maml_test.yml"
-	err = os.WriteFile(path+"/"+name, []byte(resultMamlYamlString), 0644)
-	if err != nil {
-		log.Error().Msg(err.Error())
-	}
-	fmt.Println("wrote to file", path+"/"+name)
+	//path := "/mnt/c/projects/music-user-reform/converter-standard-note"
+	//name := "maml_test.yml"
+	// err = os.WriteFile(path+"/"+name, []byte(resultMamlYamlString), 0644)
+	// if err != nil {
+	// 	log.Error().Msg(err.Error())
+	// }
+	//fmt.Println("wrote to file", path+"/"+name)
 	//sleep 5 seconds
-	time.Sleep(2 * time.Second)
+	//time.Sleep(2 * time.Second)
 }
 
 var outputChords = []string{}
