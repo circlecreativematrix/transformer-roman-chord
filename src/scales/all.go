@@ -21,6 +21,9 @@ import (
 )
 
 func GetFractionFromTime(time string) string {
+	if time == "0" {
+		return "0"
+	}
 	r, _ := regexp.Compile(`(\d+\/\d+)`)
 	fraction := r.FindString(time)
 	if fraction != "" {
