@@ -60,11 +60,7 @@ func ParseStringToChordList(chordStr string) []types.Chord {
 			case "label":
 				currentChord.ChordInfo.Label = value
 			case "vol":
-				vol, err := strconv.ParseInt(value, 10, 64)
-				if err != nil {
-					log.Error().Msgf("error parsing int for vol %s", value)
-				}
-				currentChord.ChordInfo.Velocity = int(vol)
+				currentChord.ChordInfo.Velocity = value
 			case "track":
 				track, err := strconv.ParseInt(value, 10, 64)
 				if err != nil {

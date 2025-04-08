@@ -27,7 +27,7 @@ type NBEFNoteRequest struct {
 	OriginalTime  string            `yaml:"original_time,omitempty"`
 	OriginalNote  string            `yaml:"original_note,omitempty"`
 	Track         int               `yaml:"track" default:"-1"`
-	Velocity      int               `yaml:"velocity"`
+	Velocity      string            `yaml:"velocity"`
 	BeatType      string            `yaml:"beat_type,omitempty"`
 	NoteType      string            `yaml:"note_type,omitempty"`
 	Tempo         int               `yaml:"tempo,omitempty"`
@@ -94,8 +94,8 @@ func (n NBEFNoteRequest) String(filter ...string) string {
 	if n.Signal != "" {
 		builder.WriteString(fmt.Sprintf("io:%s,", n.Signal))
 	}
-	if n.Velocity != 0 {
-		builder.WriteString(fmt.Sprintf("vol:%d,", n.Velocity))
+	if n.Velocity != "" {
+		builder.WriteString(fmt.Sprintf("vol:%s,", n.Velocity))
 	}
 	if n.Track != -1 {
 		builder.WriteString(fmt.Sprintf("track:%d,", n.Track))
