@@ -22,6 +22,7 @@ import (
 
 func GetFractionFromTime(time string) string {
 	if time == "0" {
+		log.Error().Str("time", time).Msg("zero has no fraction")
 		return "0"
 	}
 	r, _ := regexp.Compile(`(\d+\/\d+)`)
@@ -29,7 +30,7 @@ func GetFractionFromTime(time string) string {
 	if fraction != "" {
 		return fraction
 	} else {
-		log.Error().Msg("no fraction for duration")
+		log.Error().Str("time", time).Msg("no fraction for duration")
 		return ""
 	}
 }

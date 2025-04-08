@@ -76,6 +76,14 @@ func ParseStringToChordList(chordStr string) []types.Chord {
 				log.Info().Msgf("inchord %s", value)
 			case "note":
 				currentChord.ChordInfo.Note = &value
+			case "io":
+				currentChord.ChordInfo.Signal = value
+			case "midi":
+				midi, err := strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					log.Error().Msgf("error parsing int for midi %s", value)
+				}
+				currentChord.ChordInfo.Midi = int(midi)
 			case "chord_type":
 				currentChord.ChordType = value
 			case "chord_pattern":
@@ -159,7 +167,7 @@ func ParseChordList(chordList *[]types.Chord) []types.NBEFNoteRequest {
 	for _, chord := range *chordList {
 		// major, melodic minor, harmonic minor, natural minor. 7th chords
 		// slash chord
-		if chord.Chord == "" && chord.ChordInfo.Note == nil {
+		if chord.Chord == "" && (chord.ChordInfo.Note == nil || chord.ChordInfo.Midi != 0) {
 			outNotes = append(outNotes, chord.ChordInfo)
 			continue
 		} else {

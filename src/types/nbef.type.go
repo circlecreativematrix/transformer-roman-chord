@@ -88,14 +88,23 @@ func (n NBEFNoteRequest) String(filter ...string) string {
 		}
 
 	}
-
+	if n.Midi != 0 {
+		builder.WriteString(fmt.Sprintf("midi:%d,", n.Midi))
+	}
+	if n.Signal != "" {
+		builder.WriteString(fmt.Sprintf("io:%s,", n.Signal))
+	}
 	if n.Velocity != 0 {
 		builder.WriteString(fmt.Sprintf("vol:%d,", n.Velocity))
 	}
 	if n.Track != -1 {
 		builder.WriteString(fmt.Sprintf("track:%d,", n.Track))
 	}
-	return builder.String()[0 : builder.Len()-1]
+	if len(builder.String()) > 1 {
+		return builder.String()[0 : builder.Len()-1]
+	} else {
+		return builder.String()
+	}
 }
 
 func StringAllNotes(n *[]NBEFNoteRequest) string {

@@ -162,7 +162,16 @@ func HandleLetter(chord types.Chord) []types.NBEFNoteRequest {
 		for i := 0; i < len(chord.Pattern); i++ {
 			note := chordNotes[chord.Pattern[i]%(len(chordNotes))]
 			note.TimeSec = chord.TimeSec[i%(len(chord.TimeSec))]
-			note.Duration = 	GetFractionFromTime(note.TimeSec)
+			time := GetFractionFromTime(note.TimeSec)
+			if note.TimeSec == "P" {
+
+			} else if time == "" {
+				numerator := strings.Trim(note.TimeSec, "P+-")
+				note.Duration = numerator + "/1"
+			} else {
+				note.Duration = time
+			}
+
 			outputNotes = append(outputNotes, note)
 		}
 	}
