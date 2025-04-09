@@ -20,8 +20,22 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func GetFractionFromTime(time string) string {
+	if time == "0" {
+		log.Error().Str("time", time).Msg("zero has no fraction")
+		return "0"
+	}
+	r, _ := regexp.Compile(`(\d+\/\d+)`)
+	fraction := r.FindString(time)
+	if fraction != "" {
+		return fraction
+	} else {
+		log.Error().Str("time", time).Msg("no fraction for duration")
+		return ""
+	}
+}
 func getRomanOnly(roman string) string {
-	regRomanOnly, _ := regexp.Compile("([ivIVXCxc]+)")
+	regRomanOnly, _ := regexp.Compile("([ivIV]+)")
 	return regRomanOnly.FindString(roman)
 }
 func HandleDiminished(chordRequest *types.ChordRequest) {
@@ -51,7 +65,11 @@ func HandleDiminished(chordRequest *types.ChordRequest) {
 		// 	// get to a minor first if a major
 		// 	chordRequest.ChordNotes[1].Halfsteps -= 1
 		// }
-		chordRequest.ChordNotes[2].Halfsteps = -1
+		if chordRequest.RomanType == "up" {
+			chordRequest.ChordNotes[2].Halfsteps += 1
+		} else {
+			chordRequest.ChordNotes[2].Halfsteps -= 1
+		}
 
 	}
 	if strings.Contains(modifiersOut, "o") {
@@ -64,26 +82,64 @@ func handleModifiers(chordRequest *types.ChordRequest) {
 	HandleDiminished(chordRequest)
 
 }
-func handleNumbers(chordRequest *types.ChordRequest) {
-
-	regNumbers := regexp.MustCompile("/?[_0-9]+")
-	numbersOut := regNumbers.FindString(chordRequest.Chord.Chord)
-	if numbersOut == "" {
-		return
+func getNumbersPastSlash(chord string) string {
+	regNumbers := regexp.MustCompile("/?([_0-9]+)")
+	numbersOut := regNumbers.FindStringSubmatch(chord)
+	if len(numbersOut) < 2 {
+		return ""
 	}
-	splitNumeratorDenominator := strings.Split(numbersOut, "_")
-	numerator := splitNumeratorDenominator[0]
+	return numbersOut[1]
+}
+func getFractionUnderlineSplit(chord string) []string {
+	splitNumeratorDenominator := strings.Split(chord, "_")
+	numerator := ""
 	denominator := ""
 	if len(splitNumeratorDenominator) > 1 {
+		numerator = splitNumeratorDenominator[0]
 		denominator = splitNumeratorDenominator[1]
+		println("numerator", numerator, "denominator", denominator)
+		return []string{numerator, denominator}
 	}
-	if numerator != "" {
-		println("numerator-ignore", numerator)
+	return nil
+}
+
+// adds an offset to each chord note in request, assumes each note in request is number
+func addOffsetToChordNotes(chordNotes *[]types.NBEFNoteRequest, number int64) {
+	offsetPattern := []int{int(number), int(number), int(number)}
+	if number == 3 { //// inversion 1
+		offsetPattern = []int{int(number - 1), int(number - 1), int(number)}
 	}
-	if denominator != "" {
-		println("denominator-ignore", denominator)
+
+	if number == 5 { // inversion 2
+		offsetPattern = []int{int(number - 1), int(number), int(number)} // check again with piano iii/5
 	}
-	println("numerator", numerator, "denominator", denominator)
+	// todo: what do the notes in between look like?
+	for i := 0; i < len(*chordNotes); i++ {
+		noteNum, err := strconv.ParseInt(*((*chordNotes)[i].Note), 10, 64)
+		if err != nil {
+			log.Error().Msgf("error parsing int for note %s", *(*chordNotes)[i].Note)
+		}
+		noteNum += int64(offsetPattern[i%len(offsetPattern)])
+		noteStr := strconv.Itoa(int(noteNum))
+		(*chordNotes)[i].Note = &noteStr
+	}
+	//
+}
+func handleNumbers(chordRequest *types.ChordRequest) {
+	number := getNumbersPastSlash(chordRequest.Chord.Chord)
+	if number == "" {
+		return
+	}
+	//this will fail if I/5 is not a number
+	numberNum, err := strconv.ParseInt(number, 10, 64)
+	if err != nil {
+		log.Error().Msgf("error parsing int for number %s", number)
+		return
+	}
+
+	addOffsetToChordNotes(&chordRequest.ChordNotes, numberNum)
+	// extra feature
+	//getFractionUnderlineSplit(number)
 
 }
 func handleSharpsFlats(chordRequest *types.ChordRequest) {
@@ -107,11 +163,11 @@ func upperRomanChord(chord types.Chord, offset int) []types.NBEFNoteRequest {
 	if chord.ChordInfo.TimeSec == "" {
 		chord.ChordInfo.TimeSec = "P"
 	}
+	pattern := []int{0, 2, 4}
+	for i := 0; i < len(pattern); i++ {
 
-	for i := 0; i < len(chord.Pattern); i++ {
-		println("note", chord.Pattern[i]+offset)
 		info := chord.ChordInfo // copies last of the chord infos
-		offPattern := strconv.Itoa(chord.Pattern[i] + offset + chord.Offset)
+		offPattern := strconv.Itoa(pattern[i] + offset + chord.Offset)
 		info.Note = &offPattern
 		outNotes = append(outNotes, info)
 	}

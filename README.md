@@ -46,5 +46,4 @@ What happens when it is VII or VIIO ?
 
 - todo: make http endpoints and draw a picture of how to make it work / dockerfiles of each 
 - todo: possibly redo the recording in the browser to nbef 
-- nbef: friggin' figure out the timeSec thing - duration? timesec? how is it currently working? 
-- abandon midi in go for awhile, just use python. 
+- figure out why halfsteps are not working in browser

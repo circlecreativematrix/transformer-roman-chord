@@ -17,7 +17,7 @@ type Chord struct {
 	ChordType string          // major, minor_natural, minor_harmonic, minor_melodic
 	Pattern   []int           // this is the pattern for the chord, to be read by NotesOut render
 	ChordInfo NBEFNoteRequest // chord info for entire chord, to be read by NotesOut render
-	TimeSec   string          // this is time for entire chord, to be read by NotesOut render
+	TimeSec   []string        // this is time for entire chord, to be read by NotesOut render
 }
 
 type NBEFNoteRequest struct {
@@ -26,8 +26,8 @@ type NBEFNoteRequest struct {
 	TimeSec       string            `yaml:"time_s,omitempty"`
 	OriginalTime  string            `yaml:"original_time,omitempty"`
 	OriginalNote  string            `yaml:"original_note,omitempty"`
-	Track         int               `yaml:"track"`
-	Velocity      int               `yaml:"velocity"`
+	Track         int               `yaml:"track" default:"-1"`
+	Velocity      string            `yaml:"velocity"`
 	BeatType      string            `yaml:"beat_type,omitempty"`
 	NoteType      string            `yaml:"note_type,omitempty"`
 	Tempo         int               `yaml:"tempo,omitempty"`
@@ -45,23 +45,29 @@ type NBEFNoteRequest struct {
 
 func (n NBEFNoteRequest) String(filter ...string) string {
 	builder := strings.Builder{}
+	println(n.Track, "track")
 	if len(filter) != 0 {
-		if n.Note != nil {
-			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
-		}
 		if n.Halfsteps != 0 {
 			builder.WriteString(fmt.Sprintf("halfsteps:%d,", n.Halfsteps))
 		}
+		if n.Note != nil {
+			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
+		}
+
 		if n.TimeSec != "" {
 			builder.WriteString(fmt.Sprintf("time:%s,", n.TimeSec))
 		}
-	} else {
-		if n.Note != nil {
-			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
+		if n.Duration != "" {
+			builder.WriteString(fmt.Sprintf("dur:%s,", n.Duration))
 		}
+	} else {
 		if n.Halfsteps != 0 {
 			builder.WriteString(fmt.Sprintf("halfsteps:%d,", n.Halfsteps))
 		}
+		if n.Note != nil {
+			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
+		}
+
 		if n.TimeSec != "" {
 			builder.WriteString(fmt.Sprintf("time:%s,", n.TimeSec))
 		}
@@ -76,16 +82,39 @@ func (n NBEFNoteRequest) String(filter ...string) string {
 		if n.Tempo != 0 {
 			builder.WriteString(fmt.Sprintf("tempo:%d,", n.Tempo))
 		}
+		if n.Duration != "" {
+			builder.WriteString(fmt.Sprintf("dur:%s,", n.Duration))
+		}
+		if n.Label != "" {
+			builder.WriteString(fmt.Sprintf("label:%s,", n.Label))
+		}
 
 	}
-
-	return builder.String()[0 : builder.Len()-1]
+	if n.Midi != 0 {
+		builder.WriteString(fmt.Sprintf("midi:%d,", n.Midi))
+	}
+	if n.Signal != "" {
+		builder.WriteString(fmt.Sprintf("io:%s,", n.Signal))
+	}
+	if n.Velocity != "" {
+		builder.WriteString(fmt.Sprintf("vol:%s,", n.Velocity))
+	}
+	if n.Track != -1 {
+		builder.WriteString(fmt.Sprintf("track:%d,", n.Track))
+	}
+	if len(builder.String()) > 1 {
+		return builder.String()[0 : builder.Len()-1]
+	} else {
+		return builder.String()
+	}
 }
 
 func StringAllNotes(n *[]NBEFNoteRequest) string {
 	result := []string{}
+
 	for _, note := range *n {
 		result = append(result, note.String())
+
 	}
 	return strings.Join(result, "\n")
 }

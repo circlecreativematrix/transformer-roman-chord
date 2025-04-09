@@ -1,10 +1,9 @@
-package src
+package scales
 
 import (
 	"strconv"
 	"strings"
 
-	"fornof.me/m/v2/src/scales"
 	"fornof.me/m/v2/src/types"
 	"github.com/rs/zerolog/log"
 )
@@ -14,7 +13,7 @@ func HandleBaseRoman(chord types.Chord) []types.NBEFNoteRequest {
 
 	switch chord.ChordType {
 	case types.Constants.Major:
-		noteReturn = append(noteReturn, scales.HandleMajor(chord)...)
+		noteReturn = append(noteReturn, HandleMajor(chord)...)
 	// case types.Constants.MinorNatural:
 	// 	scales.HandleMajor(roman, &noteReturn, pattern, chordInfo, types.Constants.MinorNatural)
 	// case types.Constants.MinorHarmonic:
@@ -26,8 +25,9 @@ func HandleBaseRoman(chord types.Chord) []types.NBEFNoteRequest {
 		noteReturn = append(noteReturn, chord.ChordInfo)
 	}
 
-	if chord.TimeSec != "" {
-		noteReturn = append(noteReturn, types.NBEFNoteRequest{TimeSec: chord.TimeSec})
+	if chord.TimeSec != nil && !chord.IsSplit {
+		moveTimeAhead := types.NBEFNoteRequest{TimeSec: chord.TimeSec[0], Track: -1}
+		noteReturn = append(noteReturn, moveTimeAhead)
 	}
 	return noteReturn
 }
@@ -42,6 +42,7 @@ func ParseStringToChordList(chordStr string) []types.Chord {
 		}
 
 		currentChord := types.Chord{}
+		currentChord.ChordInfo.Track = -1
 		values := strings.Split(r, ",")
 		for _, v := range values {
 
@@ -49,12 +50,36 @@ func ParseStringToChordList(chordStr string) []types.Chord {
 				continue
 			}
 			entry := strings.Split(v, ":")
+			if len(entry) < 2 {
+				continue
+
+			}
 			key := strings.Trim(entry[0], " \t\n,")
 			value := strings.Trim(entry[1], " \t\n,")
 			switch key {
+			case "label":
+				currentChord.ChordInfo.Label = value
+			case "vol":
+				currentChord.ChordInfo.Velocity = value
+			case "track":
+				track, err := strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					log.Error().Msgf("error parsing int for track %s", value)
+				}
+				currentChord.ChordInfo.Track = int(track)
 			case "chord":
 				currentChord.Chord = value
 				log.Info().Msgf("inchord %s", value)
+			case "note":
+				currentChord.ChordInfo.Note = &value
+			case "io":
+				currentChord.ChordInfo.Signal = value
+			case "midi":
+				midi, err := strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					log.Error().Msgf("error parsing int for midi %s", value)
+				}
+				currentChord.ChordInfo.Midi = int(midi)
 			case "chord_type":
 				currentChord.ChordType = value
 			case "chord_pattern":
@@ -73,7 +98,11 @@ func ParseStringToChordList(chordStr string) []types.Chord {
 				}
 				currentChord.IsSplit = isSplit
 			case "time":
-				currentChord.TimeSec = value
+				pattern := strings.Split(value, "|")
+				currentChord.TimeSec = append(currentChord.TimeSec, pattern...)
+
+			case "dur":
+				currentChord.ChordInfo.Duration = value
 			case "tempo":
 				tempo, err := strconv.ParseInt(value, 10, 64)
 				if err != nil {
@@ -90,43 +119,81 @@ func ParseStringToChordList(chordStr string) []types.Chord {
 				if err != nil {
 					log.Error().Msgf("error parsing int for offset %s", value)
 				}
+			case "halfsteps":
+				halfsteps, err := strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					log.Error().Msgf("error parsing int for halfsteps %s", value)
+				}
+				currentChord.ChordInfo.Halfsteps = int(halfsteps)
 			default:
 				println("default, could not find key value", key, value)
 
 			}
-			if currentChord.TimeSec == "" {
-				currentChord.TimeSec = "P"
+
+			// todo handle IsSplit with more options with pattern , for now true/false
+			// todo soon - test this please
+
+		}
+		if currentChord.TimeSec == nil {
+			currentChord.TimeSec = []string{}
+		}
+		if currentChord.Chord == "" || currentChord.ChordInfo.Note != nil || currentChord.IsSplit {
+			if len(currentChord.TimeSec) != 0 {
+				currentChord.ChordInfo.TimeSec = currentChord.TimeSec[len(currentChord.TimeSec)-1]
 			}
 
+		}
+
+		if currentChord.ChordInfo.Duration == "" && currentChord.TimeSec != nil && len(currentChord.TimeSec) > 0 {
+			//borrow from time
+			currentChord.ChordInfo.Duration = GetFractionFromTime(currentChord.TimeSec[len(currentChord.TimeSec)-1])
+		}
+		if (currentChord.ChordInfo.TimeSec == "" || currentChord.ChordInfo.Track == -1) && currentChord.TimeSec == nil && len(currentChord.TimeSec) == 0 {
+			continue
 		}
 		chordList = append(chordList, currentChord)
 	}
 	return chordList
 }
+
 func ParseChordList(chordList *[]types.Chord) []types.NBEFNoteRequest {
 
 	outNotes := []types.NBEFNoteRequest{}
+
 	for _, chord := range *chordList {
 		// major, melodic minor, harmonic minor, natural minor. 7th chords
-		// slash chords
-		outNotes = append(outNotes, FindNotesForChord(chord)...)
+		// slash chord
+		if chord.Chord == "" && (chord.ChordInfo.Note == nil || chord.ChordInfo.Midi != 0) {
+			outNotes = append(outNotes, chord.ChordInfo)
+			continue
+		} else {
+			notes := FindNotesForChord(chord)
+			outNotes = append(outNotes, notes...)
+		}
+
 	}
 	return outNotes
 }
 
 func FindNotesForChord(chord types.Chord) []types.NBEFNoteRequest {
-	if chord.Pattern == nil {
-		chord.Pattern = []int{0, 2, 4}
-	}
+
 	if chord.ChordType == "" {
 		chord.ChordType = types.Constants.Major
 	}
 	if chord.Chord == "" {
-		return []types.NBEFNoteRequest{chord.ChordInfo}
+		if chord.ChordInfo.TimeSec != "" {
+			return []types.NBEFNoteRequest{chord.ChordInfo}
+		}
+		return nil
 	}
 	println("CHORD_START", chord.Chord, chord.ChordType)
 	// split into just chord
-
+	romanOut := getRomanOnly(chord.Chord)
+	if romanOut == "" {
+		// assume it's a letter, handle that.
+		// this needs to probably be upstreams some more
+		return HandleLetter(chord)
+	}
 	return HandleBaseRoman(chord)
 }
 func FindOffset(roman string, offsetNumeralArray []string) int {

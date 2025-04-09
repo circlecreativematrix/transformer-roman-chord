@@ -1,0 +1,8 @@
+notes: |
+  vol:0|3
+  note:0,halfsteps:2,time:P+1/3
+  chord:I,dur:1/4,split:1,chord_type:major,key_type:major,key_note:C4,time:P+1/4
+  chord:ii,time:P+1/4
+  chord:iii,time:P+1/4
+  chord:IV,time:P+1/4
+  chord:V,time:P+1/4

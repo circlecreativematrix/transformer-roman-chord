@@ -1,10 +1,14 @@
 package src
 
+// dominant
 import (
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
+	"fornof.me/m/v2/src/scales"
 	"fornof.me/m/v2/src/services"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,49 +26,98 @@ func TestChordListToNotes(t *testing.T) {
 		chord:vi 
 		chord:viiO`
 		//roman := []string
-		chordList := ParseStringToChordList(roman)
-		outNotes := ParseChordList(&chordList)
+		chordList := scales.ParseStringToChordList(roman)
+		outNotes := scales.ParseChordList(&chordList)
 		assert.Equal(t, *outNotes[1].Note, "0")
 		assert.Equal(t, outNotes[0].KeyType, "major")
 	})
 }
 
-func TestLetterChords(t *testing.T) {
-	t.Run("testing letter chords", func(t *testing.T) {
+func TestIsSplit(t *testing.T) {
+	t.Run("testing chord isSplit, should put time after each chord note", func(t *testing.T) {
+		//chord_pattern:0|2|4|8
 		roman := `
-			    chord:C,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
-				chord:C4#M,time:P+1/4
-				chord:E,time:P+1/4
-				chord:FM,time:P+1/4
-				chord:Gm,time:P+1/4
-				chord:A,time:P+1/4
-				chord:B,time:P+1/4
-				chord:C,offset:7,time:P+1/4`
+		tempo:120,key_note:C4,key_type:major
+		chord:I,split:1,time:P+1/4`
+		//roman := []string
+		chordList := scales.ParseStringToChordList(roman)
+		outNotes := scales.ParseChordList(&chordList)
+		assert.Equal(t, outNotes[1].TimeSec, "P+1/4")
+		assert.Equal(t, outNotes[2].TimeSec, "P+1/4")
+		assert.Equal(t, outNotes[2].TimeSec, "P+1/4")
+		assert.Equal(t, "0", *outNotes[1].Note)
+		assert.Equal(t, "2", *outNotes[2].Note)
+		assert.Equal(t, "4", *outNotes[3].Note)
 
-		chordList := ParseStringToChordList(roman)
-		outNotes := ParseChordList(&chordList)
-		yamlOutMaml := services.StringNotesYaml(&outNotes)
-		t.Log(string(yamlOutMaml))
 	})
 }
-func TestYamlMamlOutput(t *testing.T) {
-	t.Run("testing output yaml", func(t *testing.T) {
 
-		//roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO", "I"}
-		//roman := []string{"i", "iiO", "III", "iv", "v", "VI", "VII"}
-		roman := `
-			    chord:I,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
+func TestLetterChords(t *testing.T) {
+	// t.Run("testing letter chords", func(t *testing.T) {
+	// 	roman := `
+	// 		    chord:C,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
+	// 			chord:C4#M,time:P+1/4
+	// 			chord:E,time:P+1/4
+	// 			chord:FM,time:P+1/4
+	// 			chord:Gm,time:P+1/4
+	// 			chord:A,time:P+1/4
+	// 			chord:B,time:P+1/4
+	// 			chord:C,offset:7,time:P+1/4`
+
+	// 	chordList := scales.ParseStringToChordList(roman)
+	// 	outNotes := scales.ParseChordList(&chordList)
+	// 	yamlOutMaml := services.StringNotesYaml(&outNotes)
+	// 	t.Log(string(yamlOutMaml))
+	// })
+}
+func rest(time string) string {
+	return fmt.Sprintf("time:%s", time)
+}
+func funkyTown() string {
+	chordsOfNote := []string{"I", "V", "vi", "IV", ""}
+	beatPattern := []string{"1/4", "1/4", "1/8", "1/8", "1/4"}
+	outputChords := []string{}
+	outputChords = append(outputChords, "key_type:major,key_note:D4,tempo:60,time:P")
+	for i, chord := range chordsOfNote {
+		outputChords = append(outputChords, fmt.Sprintf("chord:%s,time:P+%s,dur:%s", chord, beatPattern[i], beatPattern[i]))
+	}
+
+	for i := range chordsOfNote {
+		outputChords = append(outputChords, fmt.Sprintf("chord:%s,time:P+%s,dur:%s", chordsOfNote[i*2%len(chordsOfNote)], beatPattern[i], beatPattern[i]))
+	}
+	for i, chord := range chordsOfNote {
+		outputChords = append(outputChords, fmt.Sprintf("chord:%s,time:P+%s,dur:%s", chord, beatPattern[i], beatPattern[i]))
+	}
+	outputChords = append(outputChords, rest("P+1/8"))
+	for i := range chordsOfNote {
+		outputChords = append(outputChords, fmt.Sprintf("chord:%s,time:P+%s,dur:%s", chordsOfNote[i*2%len(chordsOfNote)], beatPattern[i], beatPattern[i]))
+	}
+	outputChords = append(outputChords, rest("P+1/8"))
+	return strings.Join(outputChords, "\n")
+}
+func outMajor() string {
+	return `
+			    chord:I,dur:1/4,split:0,chord_type:major,key_type:major,key_note:C4,time:P+1/4
 				chord:ii,time:P+1/4
 				chord:iii,time:P+1/4
 				chord:IV,time:P+1/4
 				chord:V,time:P+1/4
 				chord:vi,time:P+1/4
-				chord:viiO,time:P+1/4
+				chord:VII,time:P+1/4
 				chord:I,offset:7,time:P+1/4`
+}
 
-		chordList := ParseStringToChordList(roman)
-		outNotes := ParseChordList(&chordList)
-		yamlOutMaml := services.StringNotesYaml(&outNotes)
+func TestYamlMamlOutput(t *testing.T) {
+	t.Run("testing output yaml", func(t *testing.T) {
+
+		//roman := []string{"I", "ii", "iii", "IV", "V", "vi", "viiO", "I"}
+		//roman := []string{"i", "iiO", "III", "iv", "v", "VI", "VII"}
+		outputChords := funkyTown() //outMajor()
+		//chordsOfNote := []string{"I", "V", "vi", "IV"}
+
+		chordList := scales.ParseStringToChordList(outputChords)
+		outNotes := scales.ParseChordList(&chordList)
+		yamlOutMaml := services.NotesToString(&outNotes)
 		t.Log(string(yamlOutMaml))
 
 		// out to file
