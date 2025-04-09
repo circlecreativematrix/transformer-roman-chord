@@ -47,12 +47,13 @@ func (n NBEFNoteRequest) String(filter ...string) string {
 	builder := strings.Builder{}
 	println(n.Track, "track")
 	if len(filter) != 0 {
-		if n.Note != nil {
-			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
-		}
 		if n.Halfsteps != 0 {
 			builder.WriteString(fmt.Sprintf("halfsteps:%d,", n.Halfsteps))
 		}
+		if n.Note != nil {
+			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
+		}
+
 		if n.TimeSec != "" {
 			builder.WriteString(fmt.Sprintf("time:%s,", n.TimeSec))
 		}
@@ -60,12 +61,13 @@ func (n NBEFNoteRequest) String(filter ...string) string {
 			builder.WriteString(fmt.Sprintf("dur:%s,", n.Duration))
 		}
 	} else {
-		if n.Note != nil {
-			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
-		}
 		if n.Halfsteps != 0 {
 			builder.WriteString(fmt.Sprintf("halfsteps:%d,", n.Halfsteps))
 		}
+		if n.Note != nil {
+			builder.WriteString(fmt.Sprintf("note:%s,", *n.Note))
+		}
+
 		if n.TimeSec != "" {
 			builder.WriteString(fmt.Sprintf("time:%s,", n.TimeSec))
 		}
